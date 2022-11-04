@@ -2,9 +2,18 @@ import os
 import torch
 import pickle
 import numpy as np
-from torch.utils.data import Dataset
-from typing import Tuple
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms
+
+from typing import Tuple, List
 from PIL import Image
+
+def tensor_transforms() -> transforms.Compose:
+    custom_transform = [
+        transforms.Resize((256, 256)),
+        transforms.ToTensor()
+    ]
+    return transforms.Compose(custom_transform)
 
 class PA100KDataset(Dataset):
     def __init__(self, 
@@ -53,3 +62,16 @@ class PA100KDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self.images)
+
+def dataloader(dataset_path: str, 
+            partition_path: str,
+            shuffle: bool = True,
+            num_workers: int = 2) -> List:
+    splits = ["train", "val", "test"]
+    datasets = [PA100KDataset(
+        dataset_path=dataset_path,
+        partition_path=partition_path,
+        split=split,
+        transform=tensor_transforms()) for split in splits]
+    loaders = [DataLoader(dataset=dataset, batch_size=32, shuffle=shuffle, num_workers=num_workers) for dataset in datasets]
+    return loaders
