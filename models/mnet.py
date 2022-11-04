@@ -16,9 +16,34 @@ Reference:
 class MainNet(nn.Module):
     def __init__(self, num_classes: int = 26, feat_out: bool = False) -> None:
         super().__init__()
-        
+        self.conv2d_7x7 = ConvBlock(in_channels=3, out_channels=32, kernel_size=7, stride=2, padding=3)
+        self.conv2d_1x1 = ConvBlock(in_channels=32, out_channels=32, kernel_size=1)
+        self.conv2d_3x3 = ConvBlock(in_channels=32, out_channels=96, kernel_size=3, padding=1)
+
+        self.inception1 = InceptionBlock1()
+        self.inception2 = InceptionBlock2()
+        self.inception3 = InceptionBlock3()
+
+        self.fc = nn.Linear(in_features=512, out_features=num_classes)
+        self.feat_out = feat_out
+
     def forward(self, x) -> Tensor:
-        pass
+        x = self.conv2d_7x7(x)
+        x = F.max_pool2d(x, kernel_size=3, stride=2)
+        x = self.conv2d_1x1(x)
+        x = self.conv2d_3x3(x)
+        input_inception = F.max_pool2d(x, kernel_size=3, stride=2)
+        inception1_output = self.inception1(input_inception)
+        inception2_output = self.inception2(inception1_output)
+        inception3_output = self.inception3(inception2_output)
+
+        fc_input = F.avg_pool2d(inception3_output, kernel_size=9, stride=1)
+        fc_input = F.dropout(x, training=self.training)
+        fc_input = fc_input.view(fc_input.size(0), -1)
+        output = self.fc(fc_input)
+        if self.feat_out:
+            return input_inception, inception1_output, inception2_output, inception3_output
+        return output
 
 class InceptionA(nn.Module):
     def __init__(self, 
