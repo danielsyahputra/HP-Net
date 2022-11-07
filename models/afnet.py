@@ -36,18 +36,18 @@ class AFNet(nn.Module):
         feature0, feature1, feature2, feature3 = self.main_net(x)
         if self.af_index == 1:
             att = self.att(feature1)
-            att1 = F.upsample(att, scale_factor=2)
+            att1 = F.interpolate(att, scale_factor=2)
             att2 = att
             att3 = F.avg_pool2d(att, kernel_size=2, stride=2)
         elif self.af_index == 2:
             att = self.att(feature2)
-            att2 = F.upsample(att, scale_factor=2)
-            att1 = F.upsample(att2, scale_factor=2)
+            att2 = F.interpolate(att, scale_factor=2)
+            att1 = F.interpolate(att2, scale_factor=2)
             att3 = att
         elif self.af_index == 3:
             att = self.att(feature3)
-            att2 = F.upsample(att, scale_factor=2)
-            att1 = F.upsample(att2, scale_factor=2)
+            att2 = F.interpolate(att, scale_factor=2)
+            att1 = F.interpolate(att2, scale_factor=2)
             att3 = att
         else:
             raise ValueError
