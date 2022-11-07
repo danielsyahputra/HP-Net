@@ -10,7 +10,7 @@ from PIL import Image
 
 def tensor_transforms() -> transforms.Compose:
     custom_transform = [
-        transforms.Resize((256, 256)),
+        transforms.Resize((299, 299)),
         transforms.ToTensor()
     ]
     return transforms.Compose(custom_transform)

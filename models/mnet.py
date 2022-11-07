@@ -26,19 +26,36 @@ class MainNet(nn.Module):
         self.feat_out = feat_out
 
     def forward(self, x) -> Tensor:
-        x = self.conv2d_7x7(x)
-        x = F.max_pool2d(x, kernel_size=3, stride=2)
-        x = self.conv2d_1x1(x)
-        x = self.conv2d_3x3(x)
-        input_inception = F.max_pool2d(x, kernel_size=3, stride=2)
-        inception1_output = self.inception1(input_inception)
-        inception2_output = self.inception2(inception1_output)
-        inception3_output = self.inception3(inception2_output)
+        """
+        Tracking Size:
+        torch.Size([1, 3, 299, 299])
+        torch.Size([1, 32, 150, 150])
+        torch.Size([1, 32, 74, 74])
+        torch.Size([1, 32, 74, 74])
+        torch.Size([1, 96, 74, 74])
+        torch.Size([1, 96, 36, 36])
+        torch.Size([1, 256, 18, 18])
+        torch.Size([1, 502, 9, 9])
+        torch.Size([1, 512, 9, 9])
+        torch.Size([1, 512, 1, 1])
+        torch.Size([1, 512, 1, 1])
+        torch.Size([1, 512])
+        torch.Size([1, 26])
+        """
+        x = self.conv2d_7x7(x) # Input: 3 x 299 x 299
+        x = F.max_pool2d(x, kernel_size=3, stride=2) # Input: 32 x 150 x 150
+        x = self.conv2d_1x1(x) # Input: 32 x 74 x 74
+        x = self.conv2d_3x3(x) # Input: 32 x 74 x 74
+        input_inception = F.max_pool2d(x, kernel_size=3, stride=2) # Input: 96 x 74 x 74
+        inception1_output = self.inception1(input_inception) # Input: 96 x 36 x 36 
+        inception2_output = self.inception2(inception1_output) # Input: 256 x 18 x 18 
+        inception3_output = self.inception3(inception2_output) # Input: 502 x 9 x 9  
 
-        fc_input = F.avg_pool2d(inception3_output, kernel_size=9, stride=1)
-        fc_input = F.dropout(x, training=self.training)
-        fc_input = fc_input.view(fc_input.size(0), -1)
-        output = self.fc(fc_input)
+        fc_input = F.avg_pool2d(inception3_output, kernel_size=9, stride=1) # Input: 512 x 9 x 9
+        fc_input = F.dropout(fc_input, training=self.training) # Input: 512 x 1 x 1
+        fc_input = fc_input.view(fc_input.size(0), -1) # Input: 512 x 1 x 1
+        output = self.fc(fc_input) # Input: 512
+        # Final Output: 26
         if self.feat_out:
             return input_inception, inception1_output, inception2_output, inception3_output
         return output
@@ -147,7 +164,7 @@ class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, **kwargs) -> None:
         super().__init__()
         self.block = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, **kwargs),
+            nn.Conv2d(in_channels, out_channels, bias=False, **kwargs),
             nn.BatchNorm2d(out_channels, eps=0.001)
         )
     
