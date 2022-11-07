@@ -44,4 +44,6 @@ class AFNet(nn.Module):
             pass
         else:
             raise ValueError
+
+    
         
