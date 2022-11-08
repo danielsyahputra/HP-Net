@@ -66,7 +66,6 @@ def train_one_epoch(model,
 
     total_loss = []
     for imgs, targets in loader:
-        targets = torch.Tensor(targets).unsqueeze(0)
         imgs, targets = imgs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = model(imgs)

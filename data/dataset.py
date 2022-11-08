@@ -1,5 +1,6 @@
 import os
 import pickle
+import torch
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
@@ -49,7 +50,7 @@ class PA100KDataset(Dataset):
         for idx in self.partition[split][partition_idx]:
             self.images.append(self.dataset["image"][idx])
             label_tmp = np.array(self.dataset['att'][idx])[self.dataset['selected_attribute']].tolist()
-            self.labels.append(label_tmp)
+            self.labels.append(torch.Tensor(label_tmp))
 
     def __getitem__(self, index) -> Tuple:
         image, target = self.images[index], self.labels[index]
