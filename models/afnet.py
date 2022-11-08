@@ -1,4 +1,4 @@
-from mnet import *
+from models.mnet import *
 
 class AFNet(nn.Module):
     def __init__(self, num_classes=26, att_out=False, feat_out=False, af_name="AF2") -> None:

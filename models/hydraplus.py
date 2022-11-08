@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mnet import MainNet
-from afnet import AFNet
+from models.afnet import *
+from models.mnet import *
 
 class HydraPlusNet(nn.Module):
     def __init__(self, num_classes: int = 26, att_out: bool = False) -> None:

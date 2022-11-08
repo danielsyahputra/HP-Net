@@ -1,5 +1,4 @@
 import os
-import torch
 import pickle
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
@@ -35,7 +34,7 @@ class PA100KDataset(Dataset):
             print(f"{partition_path} doesn't exist!")
             raise ValueError
         
-        if not self.partition.has_key(split):
+        if  split not in self.partition:
             print(f"Split {split} does not exist in dataset!")
             raise ValueError
         if partition_idx > len(self.partition[split]) - 1:
@@ -50,10 +49,10 @@ class PA100KDataset(Dataset):
         for idx in self.partition[split][partition_idx]:
             self.images.append(self.dataset["image"][idx])
             label_tmp = np.array(self.dataset['att'][idx])[self.dataset['selected_attribute']].tolist()
-            self.label.append(label_tmp)
+            self.labels.append(label_tmp)
 
     def __getitem__(self, index) -> Tuple:
-        image, target = self.images[index], self.labels[image]
+        image, target = self.images[index], self.labels[index]
         image_path = os.path.join(self.dataset["root"], image)
         img = Image.open(image_path)
         if self.transform is not None:
@@ -65,6 +64,7 @@ class PA100KDataset(Dataset):
 
 def dataloader(dataset_path: str, 
             partition_path: str,
+            batch_size: int,
             shuffle: bool = True,
             num_workers: int = 2) -> List:
     splits = ["train", "val", "test"]
@@ -73,5 +73,5 @@ def dataloader(dataset_path: str,
         partition_path=partition_path,
         split=split,
         transform=tensor_transforms()) for split in splits]
-    loaders = [DataLoader(dataset=dataset, batch_size=32, shuffle=shuffle, num_workers=num_workers) for dataset in datasets]
+    loaders = [DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers) for dataset in datasets]
     return loaders
