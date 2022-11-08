@@ -82,7 +82,7 @@ def train_model(model_name: str, loaders: Dict, loss_fn, epochs: int, **kwargs):
     loss_fn = loss_fn.to(device)
     for epoch in tqdm(range(1, epochs + 1)):
         train_loss = train_one_epoch(model=model, loader=loaders["train"], optimizer=optimizer, loss_fn=loss_fn)
-        print(f"Epoch: {epoch:.3} | Train Loss: {train_loss:.3f}")
+        print(f"Epoch: {epoch:4} | Train Loss: {train_loss:.3f}")
 
         if epoch % 5 == 0:
             checkpoint_save(model_name=model_name, state_dict=model.state_dict(), epoch=epoch)
