@@ -58,7 +58,7 @@ def  main(args):
         model_name=model_name,
         loaders=loaders,
         loss_fn=get_loss_fn(),
-        epochs=10,
+        epochs=5,
         mnet_path="checkpoint/MainNet",
         afnet_path=[None, None, None],
         lr=learning_rate 

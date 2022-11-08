@@ -24,8 +24,7 @@ def define_model(model_name: str,
                 mnet_path: str,
                 afnet_path: Iterable):
 
-    device = torch.device("mps" if torch.has_mps else "cpu")
-    print(device)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if model_name == "MainNet":
         net = MainNet()
         net.apply(weight_init)
@@ -63,6 +62,7 @@ def train_one_epoch(model,
 
     total_loss = []
     for imgs, targets in loader:
+        targets = torch.Tensor(targets).unsqueeze(0)
         imgs, targets = imgs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = model(imgs)
@@ -77,7 +77,9 @@ def train_one_epoch(model,
 
 def train_model(model_name: str, loaders: Dict, loss_fn, epochs: int, **kwargs):
     model = define_model(model_name=model_name, mnet_path=kwargs['mnet_path'], afnet_path=kwargs["afnet_path"])
+    device = next(model.parameters()).device
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=kwargs['lr'], momentum=0.9)
+    loss_fn = loss_fn.to(device)
     for epoch in tqdm(range(1, epochs + 1)):
         train_loss = train_one_epoch(model=model, loader=loaders["train"], optimizer=optimizer, loss_fn=loss_fn)
         print(f"Epoch: {epoch:.3} | Train Loss: {train_loss:.3f}")
