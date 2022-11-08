@@ -22,23 +22,27 @@ def checkpoint_save(model_name: str, state_dict, epoch) -> None:
 
 def define_model(model_name: str, 
                 mnet_path: str,
-                afnet_path: Iterable):
+                afnet_path: Iterable, **kwargs):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    resume = kwargs['resume']
     if model_name == "MainNet":
         net = MainNet()
-        net.apply(weight_init)
+        if not resume:
+            net.apply(weight_init)
     elif "AF" in model_name:
         net = AFNet(af_name=model_name)
-        net.main_net.load_state_dict(torch.load(mnet_path))
+        if not resume:
+            net.main_net.load_state_dict(torch.load(mnet_path))
         for param in net.main_net.parameters():
             param.requires_grad = False
     elif model_name == "HP":
         net = HydraPlusNet()
-        net.main_net.load_state_dict(torch.load(mnet_path))
-        net.af1.load_state_dict(torch.load(afnet_path[0]))
-        net.af2.load_state_dict(torch.load(afnet_path[1]))
-        net.af3.load_state_dict(torch.load(afnet_path[2]))
+        if not resume:
+            net.main_net.load_state_dict(torch.load(mnet_path))
+            net.af1.load_state_dict(torch.load(afnet_path[0]))
+            net.af2.load_state_dict(torch.load(afnet_path[1]))
+            net.af3.load_state_dict(torch.load(afnet_path[2]))
         
         # Freeze other network
         for param in net.main_net.parameters():
@@ -76,16 +80,35 @@ def train_one_epoch(model,
 
 
 def train_model(model_name: str, loaders: Dict, loss_fn, epochs: int, **kwargs):
-    model = define_model(model_name=model_name, mnet_path=kwargs['mnet_path'], afnet_path=kwargs["afnet_path"])
+    resume = kwargs["resume"]
+    model = define_model(model_name=model_name, 
+                        mnet_path=kwargs['mnet_path'], 
+                        afnet_path=kwargs["afnet_path"],
+                        resume=resume)
     device = next(model.parameters()).device
+    mGPUs = kwargs["mGPUs"]
+    checkpoint = kwargs["checkpoint"]
+    start = 1
+    if resume:
+        model.load_state_dict(torch.load(checkpoint))
+        numeric_filter = filter(str.isdigit, checkpoint)
+        numeric_string = "".join(numeric_filter)
+        start = int(numeric_string) + 1
+    
+    if mGPUs:
+        model = nn.DataParallel(model)
+    model.train()
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=kwargs['lr'], momentum=0.9)
     loss_fn = loss_fn.to(device)
-    for epoch in tqdm(range(1, epochs + 1)):
+    for epoch in tqdm(range(start, epochs + 1)):
         train_loss = train_one_epoch(model=model, loader=loaders["train"], optimizer=optimizer, loss_fn=loss_fn)
         print(f"Epoch: {epoch:4} | Train Loss: {train_loss:.3f}")
 
         if epoch % 5 == 0:
-            checkpoint_save(model_name=model_name, state_dict=model.state_dict(), epoch=epoch)
+            if mGPUs:
+                checkpoint_save(model_name=model_name, state_dict=model.module.state_dict(), epoch=epoch)
+            else:
+                checkpoint_save(model_name=model_name, state_dict=model.state_dict(), epoch=epoch)
             for param_group in optimizer.param_groups():
                 param_group["lr"] *= 0.95
     del model
