@@ -25,6 +25,11 @@ def parse_args():
     parser.add_argument("-af3-path", default=None, help="AF3 weight path")
 
     parser.add_argument(
+        "-epochs",
+        default=100,
+        type=int
+    )
+    parser.add_argument(
         "-num-workers",
         default=2,
         type=int,

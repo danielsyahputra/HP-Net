@@ -104,12 +104,13 @@ def train_model(model_name: str, loader, loss_fn, epochs: int, **kwargs):
         train_loss = train_one_epoch(model=model, loader=loader, optimizer=optimizer, loss_fn=loss_fn)
         print(f"Epoch: {epoch:4} | Train Loss: {train_loss:.3f}")
 
+        if mGPUs:
+            checkpoint_save(model_name=model_name, state_dict=model.module.state_dict(), epoch=epoch)
+        else:
+            checkpoint_save(model_name=model_name, state_dict=model.state_dict(), epoch=epoch)
+        
         if epoch % 5 == 0:
-            if mGPUs:
-                checkpoint_save(model_name=model_name, state_dict=model.module.state_dict(), epoch=epoch)
-            else:
-                checkpoint_save(model_name=model_name, state_dict=model.state_dict(), epoch=epoch)
-            for param_group in optimizer.param_groups():
+            for param_group in optimizer.param_groups:
                 param_group["lr"] *= 0.95
     del model
 
