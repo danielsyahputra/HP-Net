@@ -8,8 +8,10 @@ from torch.autograd import Variable
 from models.mnet import MainNet
 from models.afnet import AFNet
 from models.hydraplus import HydraPlusNet
-from typing import Dict, Iterable
+from typing import Iterable
 from tqdm.auto import tqdm
+import mlflow
+import mlflow.pytorch as mp
 
 def weight_init(model) -> None:
     if isinstance(model, nn.Conv2d):
@@ -78,9 +80,23 @@ def train_one_epoch(model,
     total_loss = np.mean(total_loss)
     return total_loss
 
+@torch.inference_mode()
+def eval_one_epoch(model, loader, loss_fn, **kwargs):
+    model.eval()
+    device = next(model.parameters()).device
+    total_loss = []
+    for imgs, targets, file_names in loader:
+        imgs, targets = imgs.to(device), targets.to(device)
+        outputs = model(imgs)
+        loss = loss_fn(outputs, targets)
+        total_loss.append(loss.item())
+    total_loss = np.mean(total_loss)
+    return total_loss
 
-def train_model(model_name: str, loader, loss_fn, epochs: int, **kwargs):
+def train_model(model_name: str, loaders, loss_fn, epochs: int, **kwargs):
+    log_params=kwargs["log_params"]
     resume = kwargs["resume"]
+    experiment_name = model_name
     model = define_model(model_name=model_name, 
                         mnet_path=kwargs['mnet_path'], 
                         afnet_path=kwargs["afnet_path"],
@@ -100,19 +116,31 @@ def train_model(model_name: str, loader, loss_fn, epochs: int, **kwargs):
     model.train()
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=kwargs['lr'], momentum=0.9)
     loss_fn = loss_fn.to(device)
-    for epoch in tqdm(range(start, epochs + 1)):
-        train_loss = train_one_epoch(model=model, loader=loader, optimizer=optimizer, loss_fn=loss_fn)
-        print(f"Epoch: {epoch:4} | Train Loss: {train_loss:.3f}")
 
-        if mGPUs:
-            checkpoint_save(model_name=model_name, state_dict=model.module.state_dict(), epoch=epoch)
-        else:
-            checkpoint_save(model_name=model_name, state_dict=model.state_dict(), epoch=epoch)
-        
-        if epoch % 5 == 0:
-            for param_group in optimizer.param_groups:
-                param_group["lr"] *= 0.95
-    del model
+    try:
+        experiment_id = mlflow.create_experiment(experiment_name)
+    except:
+        current_experiment = dict(mlflow.get_experiment_by_name(experiment_name))
+        experiment_id = current_experiment['experiment_id']
+    with mlflow.start_run(experiment_id=experiment_id):
+        for epoch in tqdm(range(start, epochs + 1)):
+            train_loss = train_one_epoch(model=model, loader=loaders["train"], optimizer=optimizer, loss_fn=loss_fn)
+            val_loss = eval_one_epoch(model=model, loader=loaders["val"], loss_fn=loss_fn)
+            print(f"Epoch: {epoch:4} | Train Loss: {train_loss:.3f} | Val Loss: {val_loss:.3f}")
+
+            mlflow.log_metrics({"train_loss": train_loss, "val_loss": val_loss})
+
+            if mGPUs:
+                checkpoint_save(model_name=model_name, state_dict=model.module.state_dict(), epoch=epoch)
+            else:
+                checkpoint_save(model_name=model_name, state_dict=model.state_dict(), epoch=epoch)
+            
+            if epoch % 5 == 0:
+                for param_group in optimizer.param_groups:
+                    param_group["lr"] *= 0.95
+        mlflow.log_params(log_params)
+
+        del model
 
 
 def predict(data_input, model_name, img_name, model, att_mode):
@@ -186,7 +214,7 @@ def test_model(model_name, loader, att_mode, weight_path, **kwargs):
         if os.path.exists(pkl_file):
             os.remove(pkl_file)
     
-    while count < 0:
+    while count < len(loader):
         imgs, targets, file_names = data_iter.next()
         imgs, targets = imgs.to(device), targets.to(device)
         outputs = predict(

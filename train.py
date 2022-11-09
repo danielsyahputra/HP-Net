@@ -67,6 +67,7 @@ def  main(args):
     af1_path = args.af1_path
     af2_path = args.af2_path
     af3_path = args.af3_path
+    epochs = args.epochs
     batch_size = args.batch_size
     num_workers = args.num_workers
     learning_rate = args.lr
@@ -80,11 +81,18 @@ def  main(args):
         batch_size=batch_size,
         num_workers=num_workers
     )
+    val_loader = dataloader(
+        dataset_path="labels/pa100k.pkl",
+        partition_path="labels/pa100k_partition.pkl",
+        split="val",
+        batch_size=batch_size,
+        num_workers=num_workers
+    )
     train_model(
         model_name=model_name,
-        loader=train_loader,
+        loaders={"train": train_loader, "val": val_loader},
         loss_fn=get_loss_fn(),
-        epochs=5,
+        epochs=epochs,
         mnet_path=mnet_path,
         afnet_path=[af1_path, af2_path, af3_path],
         lr=learning_rate,
