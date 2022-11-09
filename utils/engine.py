@@ -128,7 +128,7 @@ def train_model(model_name: str, loaders, loss_fn, epochs: int, **kwargs):
             val_loss = eval_one_epoch(model=model, loader=loaders["val"], loss_fn=loss_fn)
             print(f"Epoch: {epoch:4} | Train Loss: {train_loss:.3f} | Val Loss: {val_loss:.3f}")
 
-            mlflow.log_metrics({"train_loss": train_loss, "val_loss": val_loss})
+            mlflow.log_metrics({"train_loss": train_loss, "val_loss": val_loss}, step=epoch)
 
             if mGPUs:
                 checkpoint_save(model_name=model_name, state_dict=model.module.state_dict(), epoch=epoch)
