@@ -66,7 +66,7 @@ def train_one_epoch(model,
     device = next(model.parameters()).device
 
     total_loss = []
-    for imgs, targets in loader:
+    for imgs, targets, file_names in loader:
         imgs, targets = imgs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = model(imgs)
