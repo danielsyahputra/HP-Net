@@ -17,7 +17,7 @@ def parse_args():
     )
 
     # Pre-trained checkpoint
-    parser.add_argument("-r", default=False, help="Resume training or not")
+    parser.add_argument("-r", action="store_true", default=False, help="Resume training or not")
     parser.add_argument("-checkpoint", default=None, help="Load weight path")
     parser.add_argument("-mnet-path", default=None, help="MainNet weight path")
     parser.add_argument("-af1-path", default=None, help="AF1 weight path")
