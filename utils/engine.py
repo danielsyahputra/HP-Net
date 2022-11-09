@@ -139,7 +139,7 @@ def train_model(model_name: str, loaders, loss_fn, epochs: int, **kwargs):
                 for param_group in optimizer.param_groups:
                     param_group["lr"] *= 0.95
         mlflow.log_params(log_params)
-
+        mlflow.end_run()
         del model
 
 
