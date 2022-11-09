@@ -64,7 +64,7 @@ def train_one_epoch(model,
                     loss_fn):
 
     device = next(model.parameters()).device
-
+    model.train()
     total_loss = []
     for imgs, targets, file_names in loader:
         imgs, targets = imgs.to(device), targets.to(device)
