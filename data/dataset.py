@@ -58,7 +58,7 @@ class PA100KDataset(Dataset):
         img = Image.open(image_path)
         if self.transform is not None:
             img = self.transform(img)
-        return img, target
+        return img, target, image
 
     def __len__(self) -> int:
         return len(self.images)
@@ -66,13 +66,14 @@ class PA100KDataset(Dataset):
 def dataloader(dataset_path: str, 
             partition_path: str,
             batch_size: int,
+            split: str,
             shuffle: bool = True,
             num_workers: int = 2) -> List:
-    splits = ["train", "val", "test"]
-    datasets = [PA100KDataset(
+    dataset = PA100KDataset(
         dataset_path=dataset_path,
         partition_path=partition_path,
         split=split,
-        transform=tensor_transforms()) for split in splits]
-    loaders = [DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers) for dataset in datasets]
-    return loaders
+        transform=tensor_transforms()
+    )
+    loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+    return loader

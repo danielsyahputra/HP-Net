@@ -1,5 +1,6 @@
 import os
 import torch
+import pickle
 import numpy as np
 import torch.nn as nn
 import torch.optim as optim
@@ -78,7 +79,7 @@ def train_one_epoch(model,
     return total_loss
 
 
-def train_model(model_name: str, loaders: Dict, loss_fn, epochs: int, **kwargs):
+def train_model(model_name: str, loader, loss_fn, epochs: int, **kwargs):
     resume = kwargs["resume"]
     model = define_model(model_name=model_name, 
                         mnet_path=kwargs['mnet_path'], 
@@ -100,7 +101,7 @@ def train_model(model_name: str, loaders: Dict, loss_fn, epochs: int, **kwargs):
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=kwargs['lr'], momentum=0.9)
     loss_fn = loss_fn.to(device)
     for epoch in tqdm(range(start, epochs + 1)):
-        train_loss = train_one_epoch(model=model, loader=loaders["train"], optimizer=optimizer, loss_fn=loss_fn)
+        train_loss = train_one_epoch(model=model, loader=loader, optimizer=optimizer, loss_fn=loss_fn)
         print(f"Epoch: {epoch:4} | Train Loss: {train_loss:.3f}")
 
         if epoch % 5 == 0:
@@ -111,3 +112,136 @@ def train_model(model_name: str, loaders: Dict, loss_fn, epochs: int, **kwargs):
             for param_group in optimizer.param_groups():
                 param_group["lr"] *= 0.95
     del model
+
+
+def predict(data_input, model_name, img_name, model, att_mode):
+    if att_mode == "no_att":
+        outputs = model(data_input)
+    else:
+        if model_name == "HP":
+            att1, att2, att3, outputs = model(data_input)
+            outputs_dict = {
+                "file_name": img_name[0],
+                "AF1": att1[0].detach().numpy(),
+                "AF2": att2[0].detach().numpy(),
+                "AF3": att3[0].detach().numpy()
+            }
+        elif "AF" in model_name:
+            outputs, att = model(data_input)
+            outputs_dict = {
+                "file_name": img_name[0],
+                model_name: att[0].detach().numpy()
+            }
+        else:
+            raise ValueError
+            
+        if att_mode == "pkl_save":
+            pickle.dump(
+                outputs_dict,
+                open(f"results/att_output_{model_name}.pkl", "ab")
+            )
+        else:
+            pass
+    return outputs
+
+def test_model(model_name, loader, att_mode, weight_path, **kwargs):
+    classes = pickle.load(open("assets/classes.pkl", "rb"))
+    if att_mode == "no_att":
+        if "AF" in model_name:
+            model = AFNet(af_name=model_name)
+        elif model_name == "HP":
+            model = HydraPlusNet()
+        elif model_name == "MainNet":
+            model = MainNet()
+        else:
+            raise ValueError
+    else:
+        if "AF" in model_name:
+            model = AFNet(att_out=True, af_name=model_name)
+        elif model_name == "HP":
+            model = HydraPlusNet(att_out=True)
+        else:
+            raise ValueError
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.load_state_dict(torch.load(weight_path))
+    model.to(device)
+    print("[INFO] Load Parameter")
+    model.eval()
+
+    data_iter = iter(loader)
+    count = 0
+    TP = [0.0] * 26
+    P  = [0.0] * 26
+    TN = [0.0] * 26
+    N  = [0.0] * 26
+
+    acc = 0.0
+    precision = 0.0
+    recall = 0.0
+
+    if att_mode == "pkl_save":
+        pkl_file = f"results/att_output_{model_name}.pkl"
+        if os.path.exists(pkl_file):
+            os.remove(pkl_file)
+    
+    while count < 0:
+        imgs, targets, file_names = data_iter.next()
+        imgs, targets = imgs.to(device), targets.to(device)
+        outputs = predict(
+            data_input=imgs,
+            model_name=model_name,
+            img_name=file_names,
+            model=model,
+            att_mode=att_mode
+        )
+
+        Yandf = 0.1
+        Yorf = 0.1
+        Y = 0.1
+        f = 0.1
+        i = 0
+
+        for item in outputs[0]:
+            if item.data.item() > 0:
+                f = f+1
+                Yorf += 1
+                if targets[0][i].data.item() == 1:
+                    TP[i] += 1
+                    P[i] += 1
+                    Y += 1
+                    Yandf += 1
+                else:
+                    N[i] += 1
+            else:
+                if targets[0][i].data.item() == 0:
+                    TN[i] += 1
+                    N[i] += 1
+                else:
+                    P[i] += 1
+                    Yorf += 1
+                    Y += 1
+            i += 1
+        acc += (Yandf / Yorf)
+        precision += (Yandf / f)
+        recall += (Yandf / Y)
+        if count % 1 == 0:
+            print(f"Test on {count}-th image.")
+        count += 1
+    
+    accuracy = 0
+    print(f"TP: {TP} | TN: {TN} | P: {P} | N: {N}")
+    for c in range(26):
+        metric = (TP[c]/P[c] + TN[c]/N[c]) / 2
+        print(f"{classes[c]}: {metric:.3f}")
+        accuracy += (TP[c] / P[c] + TN[c] / N[c])
+    mean_acc = accuracy / 52
+
+    print(f"Path: {weight_path} | mA: {mean_acc:.3f}")
+
+    acc /= 10000
+    precision /= 10000
+    recall /= 10000
+    f1 = 2 * precision * recall / (precision + recall)
+
+    print(f"Acc: {acc:.3f} | Precision: {precision:.3f} | Recall: {recall:.3f} | F1: {f1:.3f}")

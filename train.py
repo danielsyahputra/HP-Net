@@ -6,7 +6,7 @@ from data.dataset import dataloader
 from utils.engine import train_model
 
 def parse_args():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Args for Training HP-Net")
 
     # Choose model
     parser.add_argument(
@@ -68,16 +68,16 @@ def  main(args):
     resume = args.r
     mGPUs = args.mGPUs
 
-    train_loader, val_loader, test_loader = dataloader(
+    train_loader = dataloader(
         dataset_path="labels/pa100k.pkl",
         partition_path="labels/pa100k_partition.pkl",
+        split="train",
         batch_size=batch_size,
         num_workers=num_workers
     )
-    loaders = {"train": train_loader, "val": val_loader, "test": test_loader}
     train_model(
         model_name=model_name,
-        loaders=loaders,
+        loader=train_loader,
         loss_fn=get_loss_fn(),
         epochs=5,
         mnet_path=mnet_path,
