@@ -98,7 +98,8 @@ def  main(args):
         lr=learning_rate,
         resume=resume,
         mGPUs=mGPUs,
-        checkpoint=checkpoint
+        checkpoint=checkpoint,
+        log_params={"batch_size": batch_size, "model_name": model_name, "lr": learning_rate, "mGPUs": mGPUs}
     )
     
 
