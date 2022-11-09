@@ -80,7 +80,7 @@ def train_one_epoch(model,
     total_loss = np.mean(total_loss)
     return total_loss
 
-@torch.inference_mode()
+@torch.no_grad()
 def eval_one_epoch(model, loader, loss_fn, **kwargs):
     model.eval()
     device = next(model.parameters()).device

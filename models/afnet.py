@@ -3,7 +3,7 @@ from models.mnet import *
 class AFNet(nn.Module):
     def __init__(self, num_classes=26, att_out=False, feat_out=False, af_name="AF2") -> None:
         super().__init__()
-        with torch.inference_mode():
+        with torch.no_grad():
             self.main_net = MainNet(feat_out=True)
         self.att_out = att_out
         self.feat_out = feat_out

@@ -8,7 +8,7 @@ class HydraPlusNet(nn.Module):
     def __init__(self, num_classes: int = 26, att_out: bool = False) -> None:
         super().__init__()
         self.att_out = att_out
-        with torch.inference_mode():
+        with torch.no_grad():
             if self.att_out:
                 self.main_net = MainNet(feat_out=True)
                 self.af1 = AFNet(att_out=True, feat_out=True, af_name="AF1")
