@@ -74,7 +74,7 @@ class AFNet(nn.Module):
             ret = torch.cat((ret, att_feature3), dim=1)
 
         # Attention 3
-        att3_width, att3_height = att3.size([2]), att3.size()[3]
+        att3_width, att3_height = att3.size()[2], att3.size()[3]
         for i in range(self.att_channel):
             temp = att3[:, i].clone()
             temp = temp.view(-1, 1, att3_width, att3_height).expand(-1, 502, att3_width, att3_height)
