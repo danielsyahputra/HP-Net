@@ -254,8 +254,6 @@ def test_model(model_name, loader, att_mode, weight_path, **kwargs):
         acc += (Yandf / Yorf)
         precision += (Yandf / f)
         recall += (Yandf / Y)
-        if count % 1 == 0:
-            print(f"Test on {count}-th image.")
         count += 1
     
     accuracy = 0
