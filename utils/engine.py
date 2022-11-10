@@ -273,4 +273,6 @@ def test_model(model_name, loader, att_mode, weight_path, **kwargs):
     recall /= 10000
     f1 = 2 * precision * recall / (precision + recall)
 
+    mlflow.log_metrics({"test_acc": acc, "test_precision": precision, "test_recall": recall, "test_f1": f1})
+
     print(f"Acc: {acc:.3f} | Precision: {precision:.3f} | Recall: {recall:.3f} | F1: {f1:.3f}")
