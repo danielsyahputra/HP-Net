@@ -135,7 +135,7 @@ def train_model(model_name: str, loaders, loss_fn, epochs: int, **kwargs):
             else:
                 checkpoint_save(model_name=model_name, state_dict=model.state_dict(), epoch=epoch)
             
-            if epoch % 20 == 0:
+            if epoch % 5 == 0:
                 for param_group in optimizer.param_groups:
                     param_group["lr"] *= 0.95
         mlflow.log_params(log_params)
