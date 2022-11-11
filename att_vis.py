@@ -1,6 +1,7 @@
 import os
 import cv2
 import pickle
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -59,7 +60,30 @@ def att_plot(model_name, att_dict, plot_mode) -> None:
 
 
 if __name__=="__main__":
-    model_name = "HP"
-    outputs = pickle2list("results/att_output_AF1.pkl")
+
+    parser = argparse.ArgumentParser(description="Attention Visualization Args")
+    parser.add_argument(
+        "-model",
+        type=str,
+        default=None,
+        choices=["MainNet", "AF1", "AF2", "AF3", "HP"]
+    )
+    parser.add_argument(
+        "-plot-mode",
+        type=str,
+        default="img_save",
+        choices=["img_save", "img_show"]
+    )
+    parser.add_argument(
+        "-pickle-file",
+        default=None,
+        required=True
+    )
+    args = parser.parse_args()
+
+    model_name = args.model
+    plot_mode = args.plot_mode
+    pickle_file = args.pickle_file
+    outputs = pickle2list(pickle_file=pickle_file)
     for output in outputs:
-        att_plot(model_name, att_dict=output, plot_mode="img_save")
+        att_plot(model_name, att_dict=output, plot_mode=plot_mode)
