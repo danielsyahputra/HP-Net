@@ -11,3 +11,5 @@ class WeightedBCELoss(object):
         if self.weights is not None:
             current_weights = torch.exp(targets + (1 - targets * 2) * self.weights)
             loss = current_weights * (targets * torch.log(outputs))
+
+        return loss
