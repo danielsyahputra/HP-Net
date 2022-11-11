@@ -1,2 +1,2 @@
-# HydraNet+
-Implementation of HydraNet+ with Additional Uncertainty Loss for Pedestrian Analysis
+# HydraPlusNet (HP-Net)
+Re-Implementation of HydraPlusNet (HP-Net) with Weighted Loss for Pedestrian Analysis
