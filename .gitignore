@@ -132,3 +132,4 @@ dmypy.json
 pa100k/
 annotation/
 results/att*.pkl
+results/attention/*
